@@ -18,6 +18,8 @@ captures/
 # IDE Metadata
 *.iml
 /.idea/
+.vscode/
+.antigravity/
 
 # OS Specific & Diagnostic Noise
 .DS_Store

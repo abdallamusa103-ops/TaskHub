@@ -20,7 +20,8 @@ fun TaskNavGraph(
 ) {
 
     val sharedTaskViewModel: TaskViewModel = viewModel()
-    val uiState by sharedTaskViewModel.taskState.collectAsState()
+    val taskUiState by sharedTaskViewModel.taskState.collectAsState()
+    val tasks = sharedTaskViewModel.tasks.collectAsState().value
 
 
     NavHost(navController = navController, startDestination = Routes.TASK_LIST) {
@@ -29,7 +30,7 @@ fun TaskNavGraph(
 
         composable(Routes.TASK_LIST) {
             TaskListScreen(
-                tasks = uiState.tasks,
+                tasks = tasks,
                 onTaskClick = { clickedTask ->
 
                     // send task to the Task Details Screen
@@ -51,8 +52,8 @@ fun TaskNavGraph(
         composable(Routes.TASK_FORM) {
             TaskFormScreen(
 
-                isEditingMode = uiState.isEditing,
-                task = uiState.currentTask,
+                isEditingMode = taskUiState.isEditing,
+                task = taskUiState.currentTask,
                 onTitleChange = { sharedTaskViewModel.updateTaskTitle(it) },
                 onDescriptionChange = { sharedTaskViewModel.updateTaskDescription(it) },
                 onPrioritySelected = { sharedTaskViewModel.updateTaskPriority(it) },
@@ -86,7 +87,7 @@ fun TaskNavGraph(
 
             val extractedId = navBackStackEntry.arguments?.getString("taskId")
 
-            val taskToShow = uiState.tasks.find { it.id == extractedId }
+            val taskToShow = tasks.find { it.id == extractedId }
 
             if (taskToShow != null) {
                 TaskDetailsScreen(
@@ -105,7 +106,7 @@ fun TaskNavGraph(
 
                     },
                     onDeleteTaskClick = {
-                        extractedId?.let { id -> sharedTaskViewModel.deleteTask(id) }
+                        taskToShow.let { task -> sharedTaskViewModel.deleteTask(task) }
                         navController.navigate(Routes.TASK_LIST) {
                             popUpTo(Routes.TASK_LIST) { inclusive = true }
                         }

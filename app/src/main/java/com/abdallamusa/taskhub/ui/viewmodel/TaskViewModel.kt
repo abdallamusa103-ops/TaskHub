@@ -1,36 +1,55 @@
 package com.abdallamusa.taskhub.ui.viewmodel
 
-import androidx.lifecycle.ViewModel
-import com.abdallamusa.taskhub.data.dummydata.sampleTasks
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
+import com.abdallamusa.taskhub.data.local.TaskDatabase.Companion.getTaskDatabase
 import com.abdallamusa.taskhub.data.model.Priority
 import com.abdallamusa.taskhub.data.model.Task
+import com.abdallamusa.taskhub.data.repository.TaskRepositoryImpl
+import com.abdallamusa.taskhub.domain.TaskRepository
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Locale
 
 data class TaskState(
-    val tasks: List<Task> = emptyList(),
 
-    val currentTask: Task = Task(title = "", description = "", dueDate = "") ,
-   val isEditing : Boolean = false
+
+    val currentTask: Task = Task(title = "", description = "", dueDate = ""),
+    val isEditing: Boolean = false
 )
 
-class TaskViewModel : ViewModel() {
+
+class TaskViewModel(
+    application: Application
+) : AndroidViewModel(application) {
+
+    private val taskRepository: TaskRepository by lazy {
+        val database = getTaskDatabase(application)
+        TaskRepositoryImpl(database.getTaskDao())
+    }
 
     private val _taskState = MutableStateFlow(TaskState())
     val taskState: StateFlow<TaskState> = _taskState.asStateFlow()
 
-    init {
-        _taskState.update { it.copy(tasks = sampleTasks()) }
-    }
+    val tasks: StateFlow<List<Task>> = taskRepository.getAllTasks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
+        )
+
 
     fun prepForAddTask() {
         _taskState.update { currentTaskState ->
             currentTaskState.copy(
-                currentTask = Task(title = "", description = "", dueDate = "") ,
+                currentTask = Task(title = "", description = "", dueDate = ""),
                 isEditing = false
             )
         }
@@ -38,11 +57,12 @@ class TaskViewModel : ViewModel() {
 
     fun prepForEditTask(taskId: String) {
 
-        val currentEditedTask = _taskState.value.tasks.find { it.id == taskId }
+        val currentEditedTask = tasks.value.find { it.id == taskId }
+
         if (currentEditedTask != null)
             _taskState.update { currentTaskState ->
                 currentTaskState.copy(
-                    currentTask = currentEditedTask ,
+                    currentTask = currentEditedTask,
                     isEditing = true
                 )
 
@@ -50,16 +70,15 @@ class TaskViewModel : ViewModel() {
 
     }
 
-    fun deleteTask(taskId: String) {
+    fun deleteTask(task: Task) {
 
-        _taskState.update {currentTaskState ->
-            currentTaskState.copy(
-                tasks = currentTaskState.tasks.filterNot { taskId == it.id },
-                currentTask = Task(title = "" , description =  "" , dueDate = "" )
-            )
+        viewModelScope.launch {
+            taskRepository.deleteTask(task = task)
 
         }
+        prepForAddTask()
     }
+
     fun updateTaskTitle(newTitle: String) {
 
         _taskState.update { currentTaskState ->
@@ -88,7 +107,7 @@ class TaskViewModel : ViewModel() {
         }
     }
 
-    fun updateTaskDueDate(newDateMillis :Long?){
+    fun updateTaskDueDate(newDateMillis: Long?) {
 // MMM -> for short text month
         newDateMillis?.let {
             val formatter = SimpleDateFormat("MMM dd,yyyy", Locale.getDefault())
@@ -107,37 +126,24 @@ class TaskViewModel : ViewModel() {
     }
 
     fun saveTask() {
-        _taskState.update { currentTaskState ->
-            val currentTask = currentTaskState.currentTask
 
-            val taskExisted = currentTaskState.tasks.any { it.id == currentTask.id }
+        val currentTask = _taskState.value.currentTask
+        val isEditing = _taskState.value.isEditing
 
-            val updatedTasks = if (taskExisted) {
-
-                currentTaskState.tasks.map {
-                    if (it.id == currentTask.id) currentTask else it
-                }
+        viewModelScope.launch {
+            if (isEditing) {
+                taskRepository.updateTask(currentTask)
             } else {
-                currentTaskState.tasks + currentTask
+                taskRepository.addTask(currentTask)
             }
-
-            currentTaskState.copy(
-                tasks = updatedTasks,
-                currentTask = Task(title = "", description = "", dueDate = "")
-            )
-
-
         }
+        prepForAddTask()
     }
 
     fun deleteAllTasks() {
 
-        _taskState.update {currentTaskState ->
-            currentTaskState.copy(
-                tasks = emptyList(),
-                currentTask = Task(title = "", description = "", dueDate = "")
-            )
-
+        viewModelScope.launch {
+            taskRepository.deleteAllTasks()
         }
 
     }
