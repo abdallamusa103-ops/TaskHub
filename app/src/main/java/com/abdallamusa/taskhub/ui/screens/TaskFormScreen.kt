@@ -104,6 +104,7 @@ fun TaskFormScreen(
 
         {
 
+
             OutlinedTextField(
                 value = task.title,
                 onValueChange = { onTitleChange(it) },
@@ -173,13 +174,15 @@ fun TaskFormScreen(
                 }
             )
             Spacer(Modifier.height(10.dp))
+            val isFormValid = task.title.isNotBlank() && task.description.isNotBlank() && task.dueDate.isNotBlank()
             Button(
                 onClick = { onSaveClick()},
                 Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = PrimaryBlue
                 ),
-                shape = ShapeDefaults.Small
+                shape = ShapeDefaults.Small,
+                enabled = isFormValid
             ){
                 Text(
                     if (isEditingMode) "Save Changes" else "Create Task",
