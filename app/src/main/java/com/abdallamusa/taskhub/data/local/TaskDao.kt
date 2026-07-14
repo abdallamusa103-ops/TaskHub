@@ -11,7 +11,7 @@ interface TaskDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     suspend fun insetTask()
 
-    @Query("SELECT * FROM tasks")
-     fun getAllTasks(): Flow<List<Task>>
+//    @Query("SELECT * FROM tasks")
+//     fun getAllTasks(): Flow<List<Task>>
 
 }
