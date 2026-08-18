@@ -4,13 +4,6 @@ TaskHub is a modern, lightweight Android task management application built entir
 
 > **Note:** This project is intentionally built as a showcase for architectural best practices, clean design, and efficient resource usage in a modern Android ecosystem.
 
-## 📱 Previews
-
-*(Replace the links below with direct URLs to your image files hosted in the repository)*
-`![Dark Mode](link_to_dark_mode_image.png)`
-`![List View](link_to_list_view_image.png)`
-`![Add Task](link_to_add_task_image.png)`
-
 ## 🛠 Tech Stack
 
 *   **Language:** Kotlin
